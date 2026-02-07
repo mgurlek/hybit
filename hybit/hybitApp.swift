@@ -10,27 +10,15 @@ import SwiftData
 
 @main
 struct hybitApp: App {
-    // Veritabanı (SwiftData) kurulumu
-    let sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Habit.self,
-            Completion.self
-        ])
-        let modelConfiguration = ModelConfiguration(
-            schema: schema,
-            isStoredInMemoryOnly: false,
-            groupContainer: .identifier("group.com.gurtech.hybit") // Widget ile paylaşım için
-        )
+    let container: ModelContainer
 
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("ModelContainer oluşturulamadı: \(error)")
-        }
-    }()
-    
-    // --- YENİ: Uygulama Başlarken İzin İste ---
     init() {
+        // HATA ÇÖZÜMÜ: do-catch bloğunu kaldırdık.
+        // DataManager zaten başlatılırken hatayı kendi içinde hallediyor.
+        // Biz sadece hazır olan container'ı alıyoruz.
+        self.container = DataManager.shared.modelContainer
+        
+        // Bildirim İzni İste
         NotificationManager.shared.requestPermission()
     }
 
@@ -38,6 +26,7 @@ struct hybitApp: App {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(sharedModelContainer)
+        // Uygulamaya "Ortak Kasayı" veriyoruz
+        .modelContainer(container)
     }
 }

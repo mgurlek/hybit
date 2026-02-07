@@ -4,7 +4,7 @@
 //
 //  Created by Mert Gurlek on 7.02.2026.
 //
-
+import WidgetKit
 import SwiftUI
 import SwiftData
 
@@ -71,9 +71,9 @@ struct HabitCarouselCard: View {
                         Circle()
                             .stroke(Color.white.opacity(0.2), lineWidth: 1)
                     )
-                
+               
                 Spacer()
-                
+               
                 // Sağ Üst Durum İkonu
                 Image(systemName: isCompletedToday ? "checkmark.circle.fill" : "circle")
                     .font(.title)
@@ -83,9 +83,9 @@ struct HabitCarouselCard: View {
                     .shadow(color: isCompletedToday ? .primary.opacity(0.5) : .clear, radius: 5)
             }
             .padding(24)
-            
+           
             Spacer()
-            
+           
             // 2. Orta Kısım: Dev Sayaç
             VStack(spacing: 4) {
                 Text("\(habit.currentStreak)")
@@ -93,23 +93,23 @@ struct HabitCarouselCard: View {
                     .foregroundStyle(.primary)
                     .shadow(color: Color.black.opacity(isCompletedToday ? 0.0 : 0.2), radius: 2, x: 0, y: 2)
                     .contentTransition(.numericText())
-                
+               
                 Text("GÜNLÜK SERİ")
                     .font(.caption2)
                     .fontWeight(.bold)
                     .foregroundStyle(.secondary)
                     .tracking(2)
             }
-            
+           
             Spacer()
-            
+           
             // 3. Alt Kısım: İsim
             Text(habit.name)
                 .font(.title3)
                 .fontWeight(.semibold)
                 .foregroundStyle(.primary)
                 .padding(.bottom, 24)
-            
+           
             // 4. Aksiyon Butonu (GÜNCELLENEN KISIM)
             Button {
                 let generator = UIImpactFeedbackGenerator(style: .medium)
@@ -117,6 +117,10 @@ struct HabitCarouselCard: View {
                 withAnimation(.snappy) {
                     viewModel?.toggleHabit(habit)
                 }
+                
+                // --- WIDGET GÜNCELLEME KODU EKLENDİ ---
+                WidgetCenter.shared.reloadAllTimelines()
+                
             } label: {
                 HStack {
                     Image(systemName: isCompletedToday ? "checkmark" : "circle")
@@ -125,7 +129,7 @@ struct HabitCarouselCard: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity)
                 .padding()
-                
+               
                 // --- CANLI BUTON EFEKTİ ---
                 .background(
                     ZStack {
@@ -144,7 +148,7 @@ struct HabitCarouselCard: View {
                 )
                 .foregroundStyle(isCompletedToday ? Color(uiColor: .systemBackground) : Color.primary)
                 .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                
+               
                 // Kenarlık
                 .overlay(
                     RoundedRectangle(cornerRadius: 20, style: .continuous)

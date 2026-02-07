@@ -4,7 +4,7 @@
 //
 //  Created by Mert Gurlek on 7.02.2026.
 //
-
+import WidgetKit
 import Foundation
 import SwiftData
 import SwiftUI
@@ -91,10 +91,17 @@ class HabitListViewModel {
         saveContext()
     }
     
+    
     // MARK: - Kaydetme Yardımcısı
     func saveContext() {
         do {
             try modelContext.save()
+            
+            // --- EKLENEN KISIM ---
+            // Veritabanında bir değişiklik (Ekleme/Silme/İşaretleme) olduğunda Widget'ı uyandır
+            WidgetCenter.shared.reloadAllTimelines()
+            // ---------------------
+            
         } catch {
             print("Kaydetme hatası: \(error)")
         }
