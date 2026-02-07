@@ -63,6 +63,7 @@
 			membershipExceptions = (
 				Managers/DataManager.swift,
 				Managers/Extensions.swift,
+				Managers/NotificationManager.swift,
 				Models/Completion.swift,
 				Models/Habit.swift,
 			);

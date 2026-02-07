@@ -9,109 +9,122 @@ import WidgetKit
 import SwiftUI
 import SwiftData
 
-// 1. Zaman Çizelgesi Sağlayıcısı
 struct Provider: TimelineProvider {
-    // DataManager'dan container'ı alıyoruz
-    let modelContainer = DataManager.shared.modelContainer
-
+    // @MainActor: Bu fonksiyonun ana iş parçacığında çalışmasını sağlar (Hatayı Çözen Kısım)
+    @MainActor
     func placeholder(in context: Context) -> SimpleEntry {
         SimpleEntry(date: Date(), habits: [])
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> Void) {
+    @MainActor
+    func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
+        // DataManager.shared artık güvenle çağrılabilir
         let habits = fetchHabits()
         let entry = SimpleEntry(date: Date(), habits: habits)
         completion(entry)
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<SimpleEntry>) -> Void) {
+    @MainActor
+    func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
+        // Verileri Çek
         let habits = fetchHabits()
-        let entry = SimpleEntry(date: Date(), habits: habits)
         
-        // 1 saat sonra veya veri değişince yenile
-        let refreshDate = Calendar.current.date(byAdding: .hour, value: 1, to: Date())!
-        let timeline = Timeline(entries: [entry], policy: .after(refreshDate))
+        // Timeline oluştur (Şimdilik sadece anlık durumu gösteriyoruz)
+        let entry = SimpleEntry(date: Date(), habits: habits)
+        let timeline = Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(60 * 15))) // 15 dk sonra yenile
         completion(timeline)
     }
     
-    // DÜZELTME 1: @MainActor kaldırıldı.
-    // Arka planda güvenli çalışması için kendi Context'ini yaratıyor.
+    // Veritabanından Alışkanlıkları Çeken Yardımcı Fonksiyon
+    @MainActor
     private func fetchHabits() -> [Habit] {
-        // Arka plan thread'i için yeni, geçici bir context oluştur
-        let context = ModelContext(modelContainer)
-        let descriptor = FetchDescriptor<Habit>(sortBy: [SortDescriptor(\.creationDate)])
-        return (try? context.fetch(descriptor)) ?? []
+        // DataManager.shared'a erişim artık güvenli
+        let context = DataManager.shared.modelContainer.mainContext
+        let descriptor = FetchDescriptor<Habit>(sortBy: [SortDescriptor(\.creationDate, order: .reverse)])
+        
+        do {
+            let habits = try context.fetch(descriptor)
+            return habits
+        } catch {
+            print("Widget veri çekme hatası: \(error)")
+            return []
+        }
     }
 }
 
-// 2. Widget Veri Modeli
 struct SimpleEntry: TimelineEntry {
     let date: Date
     let habits: [Habit]
 }
 
-// 3. Widget Arayüzü
 struct hybitWidgetEntryView : View {
     var entry: Provider.Entry
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Bugün")
+            Text("Bugünün Hedefleri")
                 .font(.caption)
+                .fontWeight(.bold)
                 .foregroundStyle(.secondary)
-                .padding(.bottom, 2)
             
             if entry.habits.isEmpty {
-                Text("Hedef yok")
+                Text("Henüz hedef yok.")
                     .font(.caption2)
-                    .italic()
+                    .foregroundStyle(.secondary)
             } else {
-                ForEach(entry.habits.prefix(3)) { habit in
+                // İlk 3 alışkanlığı gösterelim
+                ForEach(entry.habits.prefix(3), id: \.id) { habit in
                     HStack {
-                        Circle()
-                            .fill(Color(hex: habit.hexColor))
-                            .frame(width: 8, height: 8)
-                        
+                        Image(systemName: isDoneToday(habit) ? "checkmark.circle.fill" : "circle")
+                            .foregroundStyle(isDoneToday(habit) ? .green : .gray)
                         Text(habit.name)
                             .font(.system(size: 12, weight: .medium))
                             .lineLimit(1)
-                        
                         Spacer()
-                        
-                        let isDone = isCompletedToday(habit)
-                        Image(systemName: isDone ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(isDone ? Color.green : Color.gray.opacity(0.5))
-                            .font(.system(size: 14))
                     }
                 }
             }
             Spacer()
         }
-        // DÜZELTME 2: 'systemBackground' yerine standart SwiftUI rengi kullanıldı.
-        // Bu sayede macOS'te hata vermez.
+        .padding()
         .containerBackground(for: .widget) {
-            Color.white.opacity(0.1) // Veya Color.black vs.
+            Color(uiColor: .systemGroupedBackground)
         }
     }
     
-    func isCompletedToday(_ habit: Habit) -> Bool {
+    // Alışkanlık bugün yapıldı mı kontrolü
+    func isDoneToday(_ habit: Habit) -> Bool {
         guard let completions = habit.completions else { return false }
         return completions.contains { Calendar.current.isDate($0.date, inSameDayAs: Date()) }
     }
 }
 
-// 4. Widget Konfigürasyonu
-@main
 struct hybitWidget: Widget {
     let kind: String = "hybitWidget"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            hybitWidgetEntryView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+            if #available(iOS 17.0, *) {
+                hybitWidgetEntryView(entry: entry)
+                    .containerBackground(.fill.tertiary, for: .widget)
+            } else {
+                hybitWidgetEntryView(entry: entry)
+                    .padding()
+                    .background()
+            }
         }
-        .configurationDisplayName("Zincir Takip")
-        .description("Günlük hedeflerini takip et.")
+        .configurationDisplayName("Hybit Takip")
+        .description("Alışkanlıklarını ana ekrandan takip et.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
+}
+
+// Preview (Önizleme) için Mock Data
+#Preview(as: .systemSmall) {
+    hybitWidget()
+} timeline: {
+    SimpleEntry(date: .now, habits: [
+        Habit(name: "Kitap Oku", hexColor: "000000"),
+        Habit(name: "Su İç", hexColor: "000000")
+    ])
 }

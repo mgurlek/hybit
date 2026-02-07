@@ -10,14 +10,34 @@ import SwiftData
 
 @main
 struct hybitApp: App {
-    // Shared DataManager'dan container'ı alıyoruz
-    let container = DataManager.shared.modelContainer
+    // Veritabanı (SwiftData) kurulumu
+    let sharedModelContainer: ModelContainer = {
+        let schema = Schema([
+            Habit.self,
+            Completion.self
+        ])
+        let modelConfiguration = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: false,
+            groupContainer: .identifier("group.com.gurtech.hybit") // Widget ile paylaşım için
+        )
+
+        do {
+            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+        } catch {
+            fatalError("ModelContainer oluşturulamadı: \(error)")
+        }
+    }()
     
+    // --- YENİ: Uygulama Başlarken İzin İste ---
+    init() {
+        NotificationManager.shared.requestPermission()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
         }
-        // SwiftData'yı tüm uygulamaya enjekte et
-        .modelContainer(container)
+        .modelContainer(sharedModelContainer)
     }
 }

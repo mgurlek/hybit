@@ -9,7 +9,11 @@ import SwiftUI
 
 struct HabitDetailView: View {
     let habit: Habit
+    var viewModel: HabitListViewModel? // Silme işlemi için gerekli
     @Environment(\.dismiss) private var dismiss
+    
+    // Silme onayı için state
+    @State private var showDeleteConfirmation = false
     
     // Takvim Sütunları (7 Gün)
     let columns = Array(repeating: GridItem(.flexible()), count: 7)
@@ -51,6 +55,25 @@ struct HabitDetailView: View {
                         }
                         .padding(.horizontal)
                     }
+                    
+                    Divider()
+                    
+                    // 3. YENİ EKLENEN SİLME BUTONU
+                    Button(role: .destructive) {
+                        showDeleteConfirmation = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "trash")
+                            Text("Bu Hedefi Sil")
+                        }
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.red)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.red.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 15))
+                    }
+                    .padding(.bottom, 20)
                 }
                 .padding()
             }
@@ -62,20 +85,25 @@ struct HabitDetailView: View {
                         .foregroundStyle(.primary)
                 }
             }
+            // SİLME ONAY UYARISI
+            .alert("Hedefi Sil?", isPresented: $showDeleteConfirmation) {
+                Button("Vazgeç", role: .cancel) { }
+                Button("Sil", role: .destructive) {
+                    viewModel?.deleteHabit(habit)
+                    dismiss()
+                }
+            } message: {
+                Text("'\(habit.name)' hedefini ve tüm verilerini silmek istediğine emin misin?")
+            }
         }
     }
     
     // Bu ayın günlerini getiren yardımcı fonksiyon
     func daysInCurrentMonth() -> [Date] {
         let calendar = Calendar.current
-        let interval = calendar.dateInterval(of: .month, for: Date())!
-        
-        // Ayın ilk gününün haftanın kaçıncı günü olduğunu bul (Pazartesi=1 olması için ayar)
-        // Burada basitçe ayın tüm günlerini döndürüyoruz.
-        // Daha gelişmiş takvimlerde boşluk (offset) eklenir ama minimal istedik.
+        _ = calendar.dateInterval(of: .month, for: Date())!
         
         var days: [Date] = []
-        // Basit döngü: Ayın 1'inden sonuna kadar
         let range = calendar.range(of: .day, in: .month, for: Date())!
         let components = calendar.dateComponents([.year, .month], from: Date())
         

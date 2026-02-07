@@ -39,47 +39,59 @@ struct HomeView: View {
         }
         // Sheet olarak detay sayfasını aç
         .sheet(item: $selectedHabitForDetail) { habit in
-            HabitDetailView(habit: habit)
+            HabitDetailView(habit: habit, viewModel: viewModel)
         }
     }
 }
 
-// MARK: - Monokrom Kart Tasarımı (BU KISIM EKSİKTİ)
+// MARK: - Liquid Glass Kart Tasarımı
 struct HabitCarouselCard: View {
     let habit: Habit
     var viewModel: HabitListViewModel?
     
+    // Bugün yapıldı mı kontrolü
     var isCompletedToday: Bool {
         guard let completions = habit.completions else { return false }
-        return completions.contains { Calendar.current.isDate($0.date, inSameDayAs: Date()) }
+        return completions.contains { $0.date.isSameLogicalDay(as: Date()) }
     }
     
     var body: some View {
         VStack(spacing: 0) {
-            // 1. Üst İkon
+            // 1. Üst Kısım: İkon ve Durum
             HStack {
+                // İkon Kutusu
                 Image(systemName: habit.iconSymbol)
                     .font(.title2)
                     .foregroundStyle(.primary)
                     .padding(12)
+                    .background(.ultraThinMaterial)
                     .background(Color.primary.opacity(0.05))
                     .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
                 
                 Spacer()
                 
+                // Sağ Üst Durum İkonu
                 Image(systemName: isCompletedToday ? "checkmark.circle.fill" : "circle")
                     .font(.title)
-                    .foregroundStyle(isCompletedToday ? .primary : .tertiary)
+                    .foregroundStyle(.primary)
+                    .opacity(isCompletedToday ? 1.0 : 0.3)
+                    // Tamamlandıysa hafif parlasın
+                    .shadow(color: isCompletedToday ? .primary.opacity(0.5) : .clear, radius: 5)
             }
             .padding(24)
             
             Spacer()
             
-            // 2. Sayaç
+            // 2. Orta Kısım: Dev Sayaç
             VStack(spacing: 4) {
                 Text("\(habit.currentStreak)")
                     .font(.system(size: 80, weight: .heavy, design: .rounded))
                     .foregroundStyle(.primary)
+                    .shadow(color: Color.black.opacity(isCompletedToday ? 0.0 : 0.2), radius: 2, x: 0, y: 2)
                     .contentTransition(.numericText())
                 
                 Text("GÜNLÜK SERİ")
@@ -91,14 +103,14 @@ struct HabitCarouselCard: View {
             
             Spacer()
             
-            // 3. İsim
+            // 3. Alt Kısım: İsim
             Text(habit.name)
                 .font(.title3)
                 .fontWeight(.semibold)
                 .foregroundStyle(.primary)
                 .padding(.bottom, 24)
             
-            // 4. Alt Buton
+            // 4. Aksiyon Butonu (GÜNCELLENEN KISIM)
             Button {
                 let generator = UIImpactFeedbackGenerator(style: .medium)
                 generator.impactOccurred()
@@ -113,14 +125,63 @@ struct HabitCarouselCard: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(isCompletedToday ? Color.primary : Color(uiColor: .secondarySystemBackground))
+                
+                // --- CANLI BUTON EFEKTİ ---
+                .background(
+                    ZStack {
+                        if isCompletedToday {
+                            // AKTİF: Parlak Gradient (Kristal Beyaz)
+                            LinearGradient(
+                                colors: [.primary, .primary.opacity(0.8)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        } else {
+                            // PASİF: Sönük Cam
+                            Color.primary.opacity(0.05)
+                        }
+                    }
+                )
                 .foregroundStyle(isCompletedToday ? Color(uiColor: .systemBackground) : Color.primary)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                
+                // Kenarlık
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(Color.primary.opacity(0.1), lineWidth: 1)
+                )
+                // --- GLOW (PARLAMA) EFEKTİ ---
+                // Tamamlandığında etrafına ışık yayar
+                .shadow(
+                    color: isCompletedToday ? Color.primary.opacity(0.4) : .clear,
+                    radius: 15,
+                    x: 0,
+                    y: 0
+                )
             }
             .padding(24)
         }
-        .background(Color(uiColor: .systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
-        .shadow(color: Color.black.opacity(0.1), radius: 15, x: 0, y: 5)
+        // --- KART GÖVDESİ ---
+        .background(.ultraThinMaterial)
+        .background(
+            LinearGradient(
+                colors: [.white.opacity(0.1), .white.opacity(0.02), .clear],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 36, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 36, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [.white.opacity(0.6), .white.opacity(0.1), .black.opacity(0.2)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.5
+                )
+        )
+        .shadow(color: Color.black.opacity(0.2), radius: 20, x: 0, y: 10)
     }
 }

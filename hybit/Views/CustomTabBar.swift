@@ -7,62 +7,98 @@
 
 import SwiftUI
 
-enum Tab: String, CaseIterable {
-    case home = "house.fill"
-    case feed = "safari.fill" // Akış ikonu
-    case friends = "person.2.fill" // Arkadaş ikonu
+// Eğer Tab enum'ı başka yerdeyse buradakini silebilirsin.
+enum Tab {
+    case home, feed, friends
 }
 
 struct CustomTabBar: View {
     @Binding var selectedTab: Tab
     
-    @Namespace private var namespace
-    
     var body: some View {
         HStack(spacing: 0) {
-            ForEach(Tab.allCases, id: \.rawValue) { tab in
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        selectedTab = tab
-                    }
-                } label: {
-                    VStack(spacing: 6) {
-                        Image(systemName: tab.rawValue)
-                            .font(.title2) // Boyut sabit
-                            .fontWeight(.medium) // DİKKAT: Kalınlık artık sabit (Değişmiyor)
-                            
-                        
-                        // Seçim Noktası
-                        if selectedTab == tab {
-                            Circle()
-                                .fill(Color.primary.opacity(0.8))
-                                .frame(width: 5, height: 5)
-                                .matchedGeometryEffect(id: "TAB_DOT", in: namespace)
-                        } else {
-                            // Yer tutucu
-                            Circle().fill(.clear).frame(width: 5, height: 5)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    // Sadece renk değişiyor: Siyah vs Gri
-                    .foregroundStyle(selectedTab == tab ? Color.primary : Color(uiColor: .systemGray))
-                }
-            }
+            // 1. SOL: Akış (Feed)
+            TabBarButton(icon: "safari.fill", tab: .feed, selectedTab: $selectedTab)
+            
+            // 2. ORTA: Ana Ekran (Home)
+            TabBarButton(icon: "house.fill", tab: .home, selectedTab: $selectedTab)
+            
+            // 3. SAĞ: Arkadaşlar (Friends)
+            TabBarButton(icon: "person.2.fill", tab: .friends, selectedTab: $selectedTab)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
-        .background {
-            // Liquid Glass Efekti
-            ZStack {
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                
-                Rectangle()
-                    .fill(Color.gray.opacity(0.1))
+        
+        // --- LIQUID GLASS EFEKTİ ---
+        .background(.ultraThinMaterial)
+        .background(
+            LinearGradient(
+                colors: [.white.opacity(0.15), .white.opacity(0.05), .clear],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 35, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 35, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [.white.opacity(0.5), .white.opacity(0.1), .black.opacity(0.1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
+        .shadow(color: Color.black.opacity(0.15), radius: 15, x: 0, y: 8)
+        .padding(.horizontal, 40)
+        .padding(.bottom, 10)
+    }
+}
+
+struct TabBarButton: View {
+    let icon: String
+    let tab: Tab
+    @Binding var selectedTab: Tab
+    
+    var isSelected: Bool {
+        selectedTab == tab
+    }
+    
+    var body: some View {
+        Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                selectedTab = tab
             }
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        } label: {
+            VStack(spacing: 6) {
+                // İKON
+                Image(systemName: icon)
+                    .font(.system(size: 24, weight: isSelected ? .bold : .medium))
+                    // DÜZELTME BURADA: Color.primary diyerek kesin siyah/beyaz yapıyoruz
+                    .foregroundStyle(Color.primary)
+                    .opacity(isSelected ? 1.0 : 0.4)
+                    .scaleEffect(isSelected ? 1.1 : 1.0)
+                    .shadow(color: isSelected ? Color.primary.opacity(0.3) : .clear, radius: 8)
+                
+                // NOKTA
+                if isSelected {
+                    Circle()
+                        .fill(Color.primary)
+                        .frame(width: 4, height: 4)
+                        .transition(.scale.combined(with: .opacity))
+                        .shadow(color: Color.primary.opacity(0.5), radius: 2)
+                } else {
+                    Circle()
+                        .fill(Color.clear)
+                        .frame(width: 4, height: 4)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
         }
-        .clipShape(Capsule())
-        .padding(.horizontal, 50)
-        .shadow(color: .black.opacity(0.1), radius: 15, x: 0, y: 8)
+        // KRİTİK DÜZELTME: Bu satır varsayılan mavi rengi iptal eder
+        .buttonStyle(.plain)
     }
 }
