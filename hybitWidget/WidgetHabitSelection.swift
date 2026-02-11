@@ -12,6 +12,62 @@ struct SelectHabitIntent: WidgetConfigurationIntent {
     var selectedHabit: HabitEntity?
 }
 
+// MARK: - Toggle Intent (iOS 17+ Interactive Widget)
+struct ToggleHabitIntent: AppIntent {
+    static var title: LocalizedStringResource = "Alışkanlığı İşaretle"
+    static var description: IntentDescription = IntentDescription("Bugünkü alışkanlığı tamamlandı olarak işaretle.")
+    
+    @Parameter(title: "Alışkanlık ID")
+    var habitId: String
+    
+    init() {
+        self.habitId = ""
+    }
+    
+    init(habitId: String) {
+        self.habitId = habitId
+    }
+    
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        let context = DataManager.shared.modelContainer.mainContext
+        let descriptor = FetchDescriptor<Habit>()
+        
+        do {
+            let habits = try context.fetch(descriptor)
+            if let habit = habits.first(where: { $0.id == habitId }) {
+                // Toggle mantığı
+                let today = Date()
+                let alreadyCompleted = habit.completions?.contains {
+                    $0.date.isSameLogicalDay(as: today)
+                } ?? false
+                
+                if alreadyCompleted {
+                    // Bugün zaten tamamlandı, geri al
+                    habit.completions?.removeAll { $0.date.isSameLogicalDay(as: today) }
+                } else {
+                    // Bugün tamamlandı olarak işaretle
+                    let completion = Completion(date: today, habit: habit)
+                    context.insert(completion)
+                    if habit.completions == nil {
+                        habit.completions = []
+                    }
+                    habit.completions?.append(completion)
+                }
+                
+                try context.save()
+            }
+        } catch {
+            print("Toggle hatası: \(error)")
+        }
+        
+        // Widget'ı yenile
+        WidgetCenter.shared.reloadAllTimelines()
+        
+        return .result()
+    }
+}
+
 // 2. Alışkanlıkları Listeye Dönüştüren Köprü (Entity)
 struct HabitEntity: AppEntity {
     let id: String

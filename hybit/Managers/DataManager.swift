@@ -14,28 +14,40 @@ class DataManager {
     
     let modelContainer: ModelContainer
     
+    // App Group ID (widget ile paylaşım için)
+    static let appGroupID = "group.com.gurtech.hybit"
+    
     private init() {
         let schema = Schema([
             Habit.self,
             Completion.self
         ])
         
-        // YÖNTEM DEĞİŞİKLİĞİ: "groupContainer" yerine doğrudan dosya URL'si veriyoruz.
-        // Bu yöntem çok daha garantidir.
-        guard let url = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.gurtech.hybit") else {
+        // App Group container URL
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: DataManager.appGroupID) else {
             fatalError("App Group klasörü bulunamadı! Lütfen 'Signing & Capabilities' ayarlarını kontrol et.")
         }
         
-        // Veritabanı dosyasının tam adresi
-        let databaseURL = url.appendingPathComponent("default.store")
+        // Orijinal veritabanı adını kullan (migration sorunu olmasın)
+        let databaseURL = containerURL.appendingPathComponent("default.store")
         
-        // Konfigürasyon
-        let modelConfiguration = ModelConfiguration(url: databaseURL)
+        // Önce CloudKit olmadan dene (daha güvenli)
+        let localConfig = ModelConfiguration(url: databaseURL)
         
         do {
-            modelContainer = try ModelContainer(for: schema, configurations: modelConfiguration)
+            modelContainer = try ModelContainer(for: schema, configurations: localConfig)
+            print("✅ DataManager: Veritabanı başlatıldı")
         } catch {
-            fatalError("Veritabanı başlatılamadı: \(error)")
+            print("❌ DataManager hatası: \(error)")
+            // Son çare: Varsayılan konumda dene
+            do {
+                let defaultConfig = ModelConfiguration()
+                modelContainer = try ModelContainer(for: schema, configurations: defaultConfig)
+                print("⚠️ DataManager: Varsayılan konumda başlatıldı")
+            } catch {
+                fatalError("Veritabanı başlatılamadı: \(error)")
+            }
         }
     }
 }
+

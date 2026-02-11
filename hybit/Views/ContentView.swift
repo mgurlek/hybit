@@ -130,8 +130,7 @@ struct ContentView: View {
                             }
                             .padding(.vertical, 20)
                             .frame(maxWidth: .infinity)
-                            .background(.thinMaterial) // KUTU ARKASI CAM
-                            .clipShape(RoundedRectangle(cornerRadius: 24))
+                            .adaptiveThinMaterial(cornerRadius: 24)
                             
                             // 3. BİLDİRİM KUTUSU (Liquid Animation)
                             VStack(spacing: 0) {
@@ -193,8 +192,7 @@ struct ContentView: View {
                                     .transition(.move(edge: .top).combined(with: .opacity))
                                 }
                             }
-                            .background(.thinMaterial) // KUTU ARKASI CAM
-                            .clipShape(RoundedRectangle(cornerRadius: 24))
+                            .adaptiveThinMaterial(cornerRadius: 24)
                             // ESNEME ANİMASYONU: Kutu büyürken yaylanarak büyür
                             .animation(.spring(response: 0.4, dampingFraction: 0.7), value: hasNotification)
                             .animation(.spring(response: 0.4, dampingFraction: 0.7), value: enableRandomNotification)
@@ -235,8 +233,8 @@ struct ContentView: View {
                 }
                 .presentationDetents([.fraction(0.85)])
                 .presentationCornerRadius(40)
-                // ANA CAM KATMANI (Buzlu Cam)
-                .presentationBackground(.ultraThinMaterial)
+                // ANA CAM KATMANI (iOS 26+ Liquid Glass, eski sürümler Buzlu Cam)
+                .adaptivePresentationBackground()
             }
         }
         .onAppear {

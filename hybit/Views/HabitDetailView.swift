@@ -6,14 +6,20 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct HabitDetailView: View {
     let habit: Habit
-    var viewModel: HabitListViewModel? // Silme işlemi için gerekli
+    var viewModel: HabitListViewModel? // Kaydetme ve silme işlemleri için
     @Environment(\.dismiss) private var dismiss
     
-    // Silme onayı için state
+    // Silme onayı
     @State private var showDeleteConfirmation = false
+    
+    // --- BİLDİRİM AYARLARI İÇİN STATE'LER ---
+    @State private var isNotificationEnabled: Bool = false
+    @State private var notificationTime: Date = Date()
+    @State private var isRandom: Bool = false
     
     // Takvim Sütunları (7 Gün)
     let columns = Array(repeating: GridItem(.flexible()), count: 7)
@@ -21,7 +27,7 @@ struct HabitDetailView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 40) {
+                VStack(spacing: 35) {
                     
                     // 1. Üst İstatistikler (Hedef vs Mevcut)
                     HStack(spacing: 40) {
@@ -58,7 +64,33 @@ struct HabitDetailView: View {
                     
                     Divider()
                     
-                    // 3. YENİ EKLENEN SİLME BUTONU
+                    // 3. YENİ: BİLDİRİM AYARLARI
+                    VStack(alignment: .leading, spacing: 15) {
+                        Text("Bildirim Ayarları")
+                            .font(.headline)
+                            .padding(.leading)
+                        
+                        VStack(spacing: 15) {
+                            Toggle("Bildirimleri Aç", isOn: $isNotificationEnabled)
+                                .tint(.primary)
+                            
+                            if isNotificationEnabled {
+                                Divider()
+                                
+                                DatePicker("Bildirim Saati", selection: $notificationTime, displayedComponents: .hourAndMinute)
+                                
+                                Toggle("Rastgele Saatlerde Hatırlat", isOn: $isRandom)
+                                    .tint(.orange)
+                            }
+                        }
+                        .padding()
+                        .adaptiveThinMaterial(cornerRadius: 15)
+                        .padding(.horizontal)
+                    }
+                    
+                    Divider()
+                    
+                    // 4. SİLME BUTONU
                     Button(role: .destructive) {
                         showDeleteConfirmation = true
                     } label: {
@@ -72,10 +104,10 @@ struct HabitDetailView: View {
                         .frame(maxWidth: .infinity)
                         .background(Color.red.opacity(0.1))
                         .clipShape(RoundedRectangle(cornerRadius: 15))
+                        .padding(.horizontal)
                     }
                     .padding(.bottom, 20)
                 }
-                .padding()
             }
             .navigationTitle(habit.name)
             .navigationBarTitleDisplayMode(.inline)
@@ -95,8 +127,52 @@ struct HabitDetailView: View {
             } message: {
                 Text("'\(habit.name)' hedefini ve tüm verilerini silmek istediğine emin misin?")
             }
+            // EKRAN AÇILDIĞINDA MEVCUT AYARLARI YÜKLE
+            .onAppear {
+                loadCurrentNotificationSettings()
+            }
+            // DEĞİŞİKLİK YAPILDIĞINDA OTOMATİK KAYDET VE BİLDİRİMLERİ GÜNCELLE
+            .onChange(of: isNotificationEnabled) { _, _ in updateHabitNotification() }
+            .onChange(of: notificationTime) { _, _ in updateHabitNotification() }
+            .onChange(of: isRandom) { _, _ in updateHabitNotification() }
         }
     }
+    
+    // MARK: - Bildirim Fonksiyonları
+    
+    private func loadCurrentNotificationSettings() {
+        if let time = habit.notificationTime {
+            self.isNotificationEnabled = true
+            self.notificationTime = time
+        } else if habit.allowRandomNotifications {
+            self.isNotificationEnabled = true
+        } else {
+            self.isNotificationEnabled = false
+        }
+        self.isRandom = habit.allowRandomNotifications
+    }
+    
+    private func updateHabitNotification() {
+        // 1. Eski bildirimi sistemden iptal et
+        NotificationManager.shared.cancelNotification(for: habit)
+        
+        // 2. Modeli güncelle
+        if isNotificationEnabled {
+            habit.notificationTime = notificationTime
+            habit.allowRandomNotifications = isRandom
+            
+            // 3. Yeni bildirimi kur
+            NotificationManager.shared.scheduleNotification(for: habit)
+        } else {
+            habit.notificationTime = nil
+            habit.allowRandomNotifications = false
+        }
+        
+        // 4. Veritabanına kaydet (ve widget'ları tetikle)
+        viewModel?.saveContext()
+    }
+    
+    // MARK: - Yardımcı Fonksiyonlar
     
     // Bu ayın günlerini getiren yardımcı fonksiyon
     func daysInCurrentMonth() -> [Date] {

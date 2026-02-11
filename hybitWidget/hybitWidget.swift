@@ -8,6 +8,7 @@
 import WidgetKit
 import SwiftUI
 import SwiftData
+import AppIntents
 
 // MARK: - TIMELINE PROVIDER
 struct Provider: AppIntentTimelineProvider {
@@ -48,11 +49,21 @@ struct Provider: AppIntentTimelineProvider {
     
     @MainActor
     private func fetchHabits() -> [Habit] {
+        // Debug: Log container URL
+        if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.gurtech.hybit") {
+            print("📦 Widget Container: \(containerURL.path)")
+        } else {
+            print("❌ Widget: App Group container not found!")
+        }
+        
         let context = DataManager.shared.modelContainer.mainContext
         let descriptor = FetchDescriptor<Habit>(sortBy: [SortDescriptor(\.creationDate, order: .reverse)])
         do {
-            return try context.fetch(descriptor)
+            let habits = try context.fetch(descriptor)
+            print("✅ Widget fetched \(habits.count) habits")
+            return habits
         } catch {
+            print("❌ Widget fetch error: \(error)")
             return []
         }
     }
@@ -110,47 +121,54 @@ struct WidgetDayCircle: View {
     }
 }
 
-// 2. Küçük Widget
+// 2. Küçük Widget (Interactive) - Apple Style 7x5 Grid
 struct SmallWidgetView: View {
     let habit: Habit
-    var days: [Date] { (0..<20).compactMap { Calendar.current.date(byAdding: .day, value: $0, to: Date()) } }
-    let columns = Array(repeating: GridItem(.flexible(), spacing: 5), count: 5)
+    // 35 gün = 7 sütun x 5 satır
+    var days: [Date] { (0..<35).compactMap { Calendar.current.date(byAdding: .day, value: $0, to: Date()) } }
+    let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 7)
+    
+    var isCompletedToday: Bool {
+        guard let completions = habit.completions else { return false }
+        return completions.contains { $0.date.isSameLogicalDay(as: Date()) }
+    }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .lastTextBaseline) {
+        VStack(spacing: 6) {
+            // Üst: Seri + İsim + Toggle
+            HStack(alignment: .center, spacing: 8) {
+                // Streak sayısı
                 Text("\(habit.currentStreak)")
-                    .font(.system(size: 40, weight: .bold, design: .rounded))
-                    .foregroundStyle(.primary.opacity(0.9)) // Hafif şeffaflık
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .foregroundStyle(.primary)
                 
-                Text("SERİ")
-                    .font(.system(size: 10, weight: .bold))
+                // İsim
+                Text(habit.name)
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.secondary)
-                    .padding(.bottom, 6)
+                    .lineLimit(1)
                 
                 Spacer()
+                
+                // Interactive toggle button
+                Button(intent: ToggleHabitIntent(habitId: habit.id)) {
+                    Image(systemName: isCompletedToday ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 22))
+                        .foregroundStyle(isCompletedToday ? .primary : .tertiary)
+                }
+                .buttonStyle(.plain)
             }
-            .padding(.top, 10) // Kenar boşluklarını kapattığımız için elle boşluk veriyoruz
-            .padding(.leading, 10)
+            .padding(.horizontal, 14)
+            .padding(.top, 12)
             
-            Text(habit.name.uppercased())
-                .font(.caption2.bold())
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .padding(.bottom, 8)
-                .padding(.leading, 10)
-            
-            LazyVGrid(columns: columns, spacing: 5) {
+            // 7x5 Mini Takvim
+            LazyVGrid(columns: columns, spacing: 2) {
                 ForEach(days, id: \.self) { day in
                     WidgetDayCircle(date: day, habit: habit)
                 }
             }
             .padding(.horizontal, 10)
             .padding(.bottom, 10)
-            
-            Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -209,6 +227,7 @@ struct hybitWidgetEntryView : View {
                 switch family {
                 case .systemSmall: SmallWidgetView(habit: habit)
                 case .systemMedium: MediumWidgetView(habit: habit)
+                case .systemLarge: LargeWidgetView(habit: habit)
                 case .accessoryRectangular: Text(habit.name)
                 default: Text("...")
                 }
@@ -219,11 +238,56 @@ struct hybitWidgetEntryView : View {
                 }
             }
         }
-        // ✨ KRİTİK NOKTA: DOCK EFEKTİ İÇİN DOĞRU KOD ✨
+        // ✨ iOS 26+ Liquid Glass, eski sürümler için klasik cam
         .containerBackground(for: .widget) {
-            // .ultraThinMaterial: En şeffaf, en "camsı" materyaldir.
-            // Simülatörde GRİ görünebilir, GERÇEK CİHAZDA cam olur.
-            Rectangle().fill(.ultraThinMaterial)
+            if #available(iOS 26, *) {
+                // iOS 26: Gerçek Liquid Glass efekti
+                Color.clear
+            } else {
+                // iOS 17-25: Klasik buzlu cam
+                Rectangle().fill(.ultraThinMaterial)
+            }
+        }
+    }
+}
+
+// MARK: - BÜYÜK WİDGET (Yeni)
+struct LargeWidgetView: View {
+    let habit: Habit
+    var days: [Date] { (0..<42).compactMap { Calendar.current.date(byAdding: .day, value: $0, to: Date()) } }
+    let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 7)
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // Üst: Seri + İsim
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(habit.name)
+                        .font(.title2.bold())
+                        .foregroundStyle(.primary)
+                    
+                    Text("Günlük Seri")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                
+                Spacer()
+                
+                Text("\(habit.currentStreak)")
+                    .font(.system(size: 60, weight: .bold, design: .rounded))
+                    .foregroundStyle(.primary)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            
+            // Alt: 6 Haftalık Takvim
+            LazyVGrid(columns: columns, spacing: 10) {
+                ForEach(days, id: \.self) { day in
+                    WidgetDayCircle(date: day, habit: habit)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 20)
         }
     }
 }
@@ -240,6 +304,6 @@ struct hybitWidget: Widget {
         .description("Alışkanlık serini takip et.")
         // ✨ BU ÇOK ÖNEMLİ: Kenar boşluklarını kapatıyoruz ki cam efekti tam otursun
         .contentMarginsDisabled()
-        .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryRectangular])
     }
 }
