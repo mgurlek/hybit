@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		415FAFAA2F3E69B20006BE1D /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 415FAFA92F3E69B20006BE1D /* FirebaseAuth */; };
+		415FAFAC2F3E69B20006BE1D /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 415FAFAB2F3E69B20006BE1D /* FirebaseFirestore */; };
+		415FAFC32F3E813E0006BE1D /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 415FAFC22F3E813E0006BE1D /* FirebaseStorage */; };
 		4169DC6A2F36997900E25FA5 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4169DC692F36997900E25FA5 /* WidgetKit.framework */; };
 		4169DC6C2F36997900E25FA5 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4169DC6B2F36997900E25FA5 /* SwiftUI.framework */; };
 		4169DC792F36997A00E25FA5 /* hybitWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4169DC672F36997900E25FA5 /* hybitWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -61,6 +64,7 @@
 		4169DC992F369D5C00E25FA5 /* Exceptions for "hybit" folder in "hybitWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				"GoogleService-Info.plist",
 				Managers/DataManager.swift,
 				Managers/Extensions.swift,
 				Managers/NotificationManager.swift,
@@ -104,6 +108,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				415FAFAA2F3E69B20006BE1D /* FirebaseAuth in Frameworks */,
+				415FAFAC2F3E69B20006BE1D /* FirebaseFirestore in Frameworks */,
+				415FAFC32F3E813E0006BE1D /* FirebaseStorage in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -169,6 +176,9 @@
 			);
 			name = hybit;
 			packageProductDependencies = (
+				415FAFA92F3E69B20006BE1D /* FirebaseAuth */,
+				415FAFAB2F3E69B20006BE1D /* FirebaseFirestore */,
+				415FAFC22F3E813E0006BE1D /* FirebaseStorage */,
 			);
 			productName = hybit;
 			productReference = 4169DC502F36977000E25FA5 /* hybit.app */;
@@ -224,6 +234,9 @@
 			);
 			mainGroup = 4169DC472F36977000E25FA5;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				415FAFA82F3E69B20006BE1D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4169DC512F36977000E25FA5 /* Products */;
 			projectDirPath = "";
@@ -293,6 +306,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = hybit/Info.plist;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -340,6 +354,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = hybit/Info.plist;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -606,6 +621,35 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		415FAFA82F3E69B20006BE1D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.9.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		415FAFA92F3E69B20006BE1D /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 415FAFA82F3E69B20006BE1D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		415FAFAB2F3E69B20006BE1D /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 415FAFA82F3E69B20006BE1D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		415FAFC22F3E813E0006BE1D /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 415FAFA82F3E69B20006BE1D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 4169DC482F36977000E25FA5 /* Project object */;
 }

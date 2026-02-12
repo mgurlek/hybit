@@ -8,8 +8,6 @@
 	<dict>
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.widgetkit-extension</string>
-		<key></key>
-		<string></string>
 	</dict>
 </dict>
 </plist>

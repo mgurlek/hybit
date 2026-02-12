@@ -203,7 +203,7 @@ struct StatView: View {
     var body: some View {
         VStack(spacing: 5) {
             Text(value)
-                .font(.system(size: isBig ? 48 : 32, weight: .bold, design: .rounded))
+                .font(.system(size: isBig ? 48 : 32, weight: .bold))
                 .foregroundStyle(.primary)
             Text(title)
                 .font(.caption)

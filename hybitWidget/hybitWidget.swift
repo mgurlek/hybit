@@ -139,7 +139,7 @@ struct SmallWidgetView: View {
             HStack(alignment: .center, spacing: 8) {
                 // Streak sayısı
                 Text("\(habit.currentStreak)")
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
+                    .font(.system(size: 24, weight: .bold, design: .default))
                     .foregroundStyle(.primary)
                 
                 // İsim
@@ -184,7 +184,7 @@ struct MediumWidgetView: View {
         HStack(spacing: 20) {
             VStack(alignment: .leading) {
                 Text("\(habit.currentStreak)")
-                    .font(.system(size: 52, weight: .bold, design: .rounded))
+                    .font(.system(size: 52, weight: .bold, design: .default))
                     .foregroundStyle(.primary.opacity(0.9))
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
@@ -274,7 +274,7 @@ struct LargeWidgetView: View {
                 Spacer()
                 
                 Text("\(habit.currentStreak)")
-                    .font(.system(size: 60, weight: .bold, design: .rounded))
+                    .font(.system(size: 60, weight: .bold, design: .default))
                     .foregroundStyle(.primary)
             }
             .padding(.horizontal, 20)

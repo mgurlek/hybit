@@ -24,30 +24,50 @@ class DataManager {
         ])
         
         // App Group container URL
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: DataManager.appGroupID) else {
-            fatalError("App Group klasörü bulunamadı! Lütfen 'Signing & Capabilities' ayarlarını kontrol et.")
+        if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: DataManager.appGroupID) {
+            let databaseURL = containerURL.appendingPathComponent("default.store")
+            print("📦 DataManager path: \(databaseURL.path)")
+            
+            let localConfig = ModelConfiguration(url: databaseURL)
+            
+            do {
+                modelContainer = try ModelContainer(for: schema, configurations: localConfig)
+                print("✅ DataManager: Veritabanı başlatıldı (App Group)")
+                return
+            } catch {
+                print("⚠️ App Group DB hatası: \(error)")
+                // Bozuk veritabanını sil ve tekrar dene
+                Self.deleteCorruptStore(at: databaseURL)
+                do {
+                    modelContainer = try ModelContainer(for: schema, configurations: localConfig)
+                    print("✅ DataManager: Temiz veritabanı oluşturuldu")
+                    return
+                } catch {
+                    print("❌ Temiz DB de başarısız: \(error)")
+                }
+            }
+        } else {
+            print("⚠️ App Group bulunamadı, varsayılan konum kullanılıyor")
         }
         
-        // Orijinal veritabanı adını kullan (migration sorunu olmasın)
-        let databaseURL = containerURL.appendingPathComponent("default.store")
-        
-        // Önce CloudKit olmadan dene (daha güvenli)
-        let localConfig = ModelConfiguration(url: databaseURL)
-        
+        // Fallback: varsayılan konum
         do {
-            modelContainer = try ModelContainer(for: schema, configurations: localConfig)
-            print("✅ DataManager: Veritabanı başlatıldı")
+            let defaultConfig = ModelConfiguration()
+            modelContainer = try ModelContainer(for: schema, configurations: defaultConfig)
+            print("✅ DataManager: Varsayılan konumda başlatıldı")
         } catch {
-            print("❌ DataManager hatası: \(error)")
-            // Son çare: Varsayılan konumda dene
-            do {
-                let defaultConfig = ModelConfiguration()
-                modelContainer = try ModelContainer(for: schema, configurations: defaultConfig)
-                print("⚠️ DataManager: Varsayılan konumda başlatıldı")
-            } catch {
-                fatalError("Veritabanı başlatılamadı: \(error)")
-            }
+            fatalError("Veritabanı başlatılamadı: \(error)")
         }
     }
+    
+    /// Bozuk veritabanı dosyalarını sil
+    private static func deleteCorruptStore(at url: URL) {
+        let fm = FileManager.default
+        let extensions = ["", "-wal", "-shm"]
+        for ext in extensions {
+            let fileURL = URL(fileURLWithPath: url.path + ext)
+            try? fm.removeItem(at: fileURL)
+        }
+        print("🗑️ Bozuk veritabanı silindi: \(url.lastPathComponent)")
+    }
 }
-

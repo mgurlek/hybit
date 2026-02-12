@@ -9,7 +9,7 @@ import SwiftUI
 
 // Eğer Tab enum'ı başka yerdeyse buradakini silebilirsin.
 enum Tab {
-    case home, feed, friends
+    case home, feed, friends, profile, settings
 }
 
 struct CustomTabBar: View {
@@ -17,14 +17,20 @@ struct CustomTabBar: View {
     
     var body: some View {
         HStack(spacing: 0) {
-            // 1. SOL: Akış (Feed)
+            // 1. Arkadaşlar
+            TabBarButton(icon: "person.2.fill", tab: .friends, selectedTab: $selectedTab)
+            
+            // 2. Akış
             TabBarButton(icon: "safari.fill", tab: .feed, selectedTab: $selectedTab)
             
-            // 2. ORTA: Ana Ekran (Home)
+            // 3. Ana Ekran
             TabBarButton(icon: "house.fill", tab: .home, selectedTab: $selectedTab)
             
-            // 3. SAĞ: Arkadaşlar (Friends)
-            TabBarButton(icon: "person.2.fill", tab: .friends, selectedTab: $selectedTab)
+            // 4. Profil
+            TabBarButton(icon: "person.fill", tab: .profile, selectedTab: $selectedTab)
+            
+            // 5. Ayarlar
+            TabBarButton(icon: "gearshape", tab: .settings, selectedTab: $selectedTab)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)

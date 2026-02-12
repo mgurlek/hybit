@@ -44,7 +44,8 @@ struct HabitCarouselCard: View {
     
     // Swipe gesture state
     @State private var dragOffset: CGFloat = 0
-    private let swipeThreshold: CGFloat = -80 // Negative = upward
+    private let swipeThreshold: CGFloat = -80
+    private let maxDrag: CGFloat = -120 // Üst sınır
     
     // Bugün yapıldı mı kontrolü
     var isCompletedToday: Bool {
@@ -52,13 +53,36 @@ struct HabitCarouselCard: View {
         return completions.contains { $0.date.isSameLogicalDay(as: Date()) }
     }
     
+    // Swipe ilerleme oranı (0...1)
+    private var swipeProgress: CGFloat {
+        min(1.0, abs(dragOffset) / abs(swipeThreshold))
+    }
+    
     var body: some View {
-        ZStack {
-            // MARK: - Ana Kart İçeriği
+        ZStack(alignment: .bottom) {
+            
+            // MARK: - Kart Altındaki Aksiyon Alanı
+            HStack(spacing: 8) {
+                Image(systemName: isCompletedToday ? "arrow.uturn.backward" : "checkmark")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(.primary)
+                
+                Text(isCompletedToday ? "Geri Al" : "Tamamla")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.primary)
+            }
+            .padding(.vertical, 10)
+            .padding(.horizontal, 20)
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
+            .opacity(swipeProgress)
+            .scaleEffect(0.8 + (swipeProgress * 0.2))
+            .padding(.bottom, 12)
+            
+            // MARK: - Ana Kart
             VStack(spacing: 0) {
                 // 1. Üst Kısım: İkon ve Durum
                 HStack {
-                    // İkon Kutusu
                     Image(systemName: habit.iconSymbol)
                         .font(.title2)
                         .foregroundStyle(.primary)
@@ -73,7 +97,6 @@ struct HabitCarouselCard: View {
                    
                     Spacer()
                    
-                    // Sağ Üst Durum İkonu
                     Image(systemName: isCompletedToday ? "checkmark.circle.fill" : "circle")
                         .font(.title)
                         .foregroundStyle(.primary)
@@ -87,10 +110,11 @@ struct HabitCarouselCard: View {
                 // 2. Orta Kısım: Dev Sayaç
                 VStack(spacing: 4) {
                     Text("\(habit.currentStreak)")
-                        .font(.system(size: 80, weight: .heavy, design: .rounded))
+                        .font(.system(size: 80, weight: .heavy))
                         .foregroundStyle(.primary)
                         .shadow(color: Color.black.opacity(isCompletedToday ? 0.0 : 0.2), radius: 2, x: 0, y: 2)
-                        .contentTransition(.numericText())
+                        .id("streak_\(habit.currentStreak)")
+                        .transition(.blurReplace)
                    
                     Text("GÜNLÜK SERİ")
                         .font(.caption2)
@@ -108,65 +132,39 @@ struct HabitCarouselCard: View {
                         .fontWeight(.semibold)
                         .foregroundStyle(.primary)
                     
-                    // Swipe ipucu göstergesi
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         Image(systemName: isCompletedToday ? "checkmark" : "chevron.up")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: 12, weight: .bold))
                         Text(isCompletedToday ? "Tamamlandı" : "Yukarı kaydır")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
+                            .font(.caption)
+                            .fontWeight(.semibold)
                     }
-                    .foregroundStyle(isCompletedToday ? .primary : .secondary)
-                    .opacity(isCompletedToday ? 0.8 : 0.5)
-                    // Swipe sırasında ipucunu gizle
-                    .opacity(dragOffset < -20 ? 0 : 1)
+                    .foregroundStyle(.tertiary)
+                    .opacity(dragOffset < -10 ? 0 : 1)
                 }
                 .padding(.bottom, 30)
             }
-            
-            // MARK: - Swipe Feedback Overlay
-            if dragOffset < -20 {
-                VStack {
-                    Spacer()
-                    
-                    // Swipe progress göstergesi
-                    Image(systemName: isCompletedToday ? "arrow.uturn.backward.circle.fill" : "checkmark.circle.fill")
-                        .font(.system(size: 60))
-                        .foregroundStyle(.primary)
-                        .scaleEffect(min(1.0, abs(dragOffset) / abs(swipeThreshold)))
-                        .opacity(min(1.0, abs(dragOffset) / abs(swipeThreshold)))
-                    
-                    Text(isCompletedToday ? "Geri Al" : "Tamamla")
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                        .opacity(min(1.0, abs(dragOffset) / abs(swipeThreshold)))
-                    
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.primary.opacity(0.05))
-            }
+            .adaptiveGlassCard(cornerRadius: 36)
+            // Swipe transform — kartı yukarı kaydır
+            .offset(y: dragOffset * 0.6)
+            .shadow(color: Color.black.opacity(0.2), radius: 20, x: 0, y: 10)
         }
-        // --- KART GÖVDESİ ---
-        .adaptiveGlassCard(cornerRadius: 36)
-        // Swipe transform
-        .offset(y: dragOffset * 0.3)
-        .scaleEffect(1 + (dragOffset * 0.001))
-        .shadow(color: Color.black.opacity(0.2), radius: 20, x: 0, y: 10)
         // MARK: - Swipe Gesture
         .gesture(
             DragGesture(minimumDistance: 20)
                 .onChanged { value in
-                    // Sadece yukarı swipe (negatif translation)
                     if value.translation.height < 0 {
+                        // Sınırlandırılmış drag (rubber band etkisi)
+                        let clamped = max(maxDrag, value.translation.height)
                         withAnimation(.interactiveSpring()) {
-                            dragOffset = value.translation.height
+                            dragOffset = clamped
                         }
                     }
                 }
                 .onEnded { value in
-                    if value.translation.height < swipeThreshold {
-                        // Threshold aşıldı - toggle yap
+                    let clampedTranslation = max(maxDrag, value.translation.height)
+                    
+                    if clampedTranslation < swipeThreshold {
                         let generator = UIImpactFeedbackGenerator(style: .medium)
                         generator.impactOccurred()
                         
@@ -176,7 +174,6 @@ struct HabitCarouselCard: View {
                         WidgetCenter.shared.reloadAllTimelines()
                     }
                     
-                    // Kartı eski yerine döndür
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         dragOffset = 0
                     }

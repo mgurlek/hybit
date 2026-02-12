@@ -115,16 +115,31 @@ struct AdaptiveHabitGrid<Content: View>: View {
             }
         } else {
             // iPhone: Carousel düzeni (mevcut)
-            TabView {
-                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                    content(item)
-                        .tag(index)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 20)
-                        .padding(.bottom, 80)
+            ZStack {
+                TabView {
+                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                        content(item)
+                            .tag(index)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 60)
+                            .padding(.bottom, 80)
+                    }
+                }
+                .tabViewStyle(.page(indexDisplayMode: .never))
+                
+                // Üst kenar gradient — kırpma çizgisini gizler
+                VStack {
+                    LinearGradient(
+                        colors: [Color(uiColor: .systemGroupedBackground), Color(uiColor: .systemGroupedBackground).opacity(0)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 30)
+                    .allowsHitTesting(false)
+                    
+                    Spacer()
                 }
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
         }
     }
 }
